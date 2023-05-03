@@ -19,7 +19,7 @@ library("dplyr") # para las cañerías
 # Paso 2: Cargar y aplanar los datos
 
 # Establecer la ruta a la carpeta que contiene las imágenes NIfTI
-data_folder <- "C:/Users/Juan A. Arias/Desktop/TFM/PETmasked/"
+data_folder <- "~/GitHub/TFM-Statistical-Learning/PETmasked"
 
 # Cargar los archivos con extensión .hdr en la carpeta
 nifti_data_z30 <- list()
@@ -137,6 +137,7 @@ final_tree <- rpart(
     usesurrogate = 2,
     xval = 10,
     surrogatestyle = 0,
+    
     maxdepth = best_params$.maxdepth
   )
 )
