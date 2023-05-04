@@ -19,7 +19,7 @@ library("dplyr") # para las cañerías
 # Paso 2: Cargar y aplanar los datos
 
 # Establecer la ruta a la carpeta que contiene las imágenes NIfTI
-data_folder <- "~/GitHub/TFM-Statistical-Learning/PETmasked"
+data_folder <- "C:/Users/Juan A. Arias/Desktop/TFM/PETmasked"
 
 # Cargar los archivos con extensión .hdr en la carpeta
 nifti_data_z30 <- list()
@@ -62,8 +62,6 @@ train_index <- createDataPartition(combined_data[, "Group"], p = 0.8, list = FAL
 train_data <- combined_data[train_index, ]
 test_data <- combined_data[-train_index, ]
 
-#HASTA AQUI FUNCIONA#
-
 # Paso 4: Entrenar el árbol de decisiones
 
 # Convertir las columnas "Group", "Age" y "Sex" 
@@ -96,30 +94,33 @@ compute_metric <- function(model, data) {
 }
 
 # Bucle para buscar en la cuadrícula de hiperparámetros
-best_accuracy <- 0
-best_model <- NULL
+# best_accuracy <- 0
+# best_model <- NULL
+# 
+# for (cp in tune_grid$.cp) {
+#   for (maxdepth in tune_grid$.maxdepth) {
+#     tree_model <- rpart(Group ~ ., data = train_data, method = "class",
+#                         control = rpart.control(minsplit = 10,
+#                                                 cp = cp,
+#                                                 maxcompete = 4,
+#                                                 maxsurrogate = 5,
+#                                                 usesurrogate = 2,
+#                                                 xval = 10,
+#                                                 surrogatestyle = 0,
+#                                                 maxdepth = maxdepth))
+#     accuracy <- mean(tree_model$cptable[, "xerror"])
+#     if (accuracy > best_accuracy) {
+#       best_accuracy <- accuracy
+#       best_model <- tree_model
+#     }
+#   }
+# } 
 
-for (cp in tune_grid$.cp) {
-  for (maxdepth in tune_grid$.maxdepth) {
-    tree_model <- rpart(Group ~ ., data = train_data, method = "class",
-                        control = rpart.control(minsplit = 10,
-                                                cp = cp,
-                                                maxcompete = 4,
-                                                maxsurrogate = 5,
-                                                usesurrogate = 2,
-                                                xval = 10,
-                                                surrogatestyle = 0,
-                                                maxdepth = maxdepth))
-    accuracy <- mean(tree_model$cptable[, "xerror"])
-    if (accuracy > best_accuracy) {
-      best_accuracy <- accuracy
-      best_model <- tree_model
-    }
-  }
-}
+
+bestmodel <- readRDS("C:/Users/Juan A. Arias/Desktop/TFM/bestmodel.RDS")
 
 # Mejor modelo
-print(best_model)
+print(bestmodel)
 
 # Obtener los hiperparámetros óptimos del objeto de resultados
 best_params <- tree_model$bestTune
@@ -142,19 +143,8 @@ final_tree <- rpart(
   )
 )
 
-# Entrenar el árbol de decisión utilizando rpart
-tree <- rpart(Group ~ ., data = train_data, method = "class",
-              control = rpart.control(minsplit = 10,
-                                      cp = 0.01,
-                                      maxcompete = 4,
-                                      maxsurrogate = 5,
-                                      usesurrogate = 2,
-                                      xval = 10,
-                                      surrogatestyle = 0,
-                                      maxdepth = 8))
-
 # Imprimir el resultado
-print(tree)
+print(final_tree)
 
 # Visualizar el árbol de decisión
 library(rpart.plot)
