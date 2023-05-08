@@ -33,36 +33,41 @@ hyper_grid <- expand.grid(
              length.out = 5)
 )
 
-# Definir el método de entrenamiento y control
-train_control <- trainControl(
-  method = "repeatedcv",
-  number = 5,
-  repeats = 3,
-  search = "grid",
-  classProbs = TRUE,
-  summaryFunction = multiClassSummary
-)
+# Crear una función para calcular la precisión
+accuracy <- function(actual, predicted) {
+  sum(actual == predicted) / length(actual)
+}
 
-# Entrenar el modelo con la búsqueda en cuadrícula
+# Inicializar un data.frame para almacenar los resultados
+results <- data.frame()
 set.seed(123)
-rf_model_tuned <- train(
-  Group ~ .,
-  data = train_data,
-  method = "rf",
-  metric = "Accuracy",
-  trControl = train_control,
-  tuneGrid = hyper_grid
-)
 
-# Obtener los mejores hiperparámetros encontrados
-best_hyper <- rf_model_tuned$bestTune
+# Bucle a través de los hiperparámetros
+for (i in 1:nrow(hyper_grid)) {
+  ntree <- hyper_grid[i, "ntree"]
+  mtry <- hyper_grid[i, "mtry"]
+  
+  # Ajustar el modelo de Random Forest con los hiperparámetros actuales
+  model <- randomForest(Group ~ ., data = train_data, ntree = ntree, mtry = mtry)
+  
+  # Calcular la precisión en el conjunto de prueba
+  pred <- predict(model, newdata = test_data)
+  acc <- accuracy(test_data$Group, pred)
+  
+  # Agregar los resultados al data.frame
+  results <- rbind(results, data.frame(ntree = ntree, mtry = mtry, accuracy = acc))
+}
 
-# Entrenar un modelo de Random Forest con los mejores hiperparámetros
-set.seed(123)
-rf_model_best <- randomForest(Group ~ ., data = train_data, ntree = best_hyper$ntree, mtry = best_hyper$mtry)
+# write.csv2(results, file = "decisiontree.results.csv")
+
+# Encontrar los hiperparámetros que producen la mayor precisión
+best_params <- results[which.max(results$accuracy), ]
+
+# Ajustar el modelo final utilizando los mejores hiperparámetros
+rf_model_tuned <- randomForest(Group ~ ., data = train_data, ntree = best_params$ntree, mtry = best_params$mtry)
 
 # Predecir en el conjunto de prueba
-predictions_rf_best <- predict(rf_model_best, newdata = test_data)
+predictions_rf_best <- predict(rf_model_tuned, newdata = test_data)
 
 # Crear matriz de confusión y calcular la precisión
 confusion_matrix_rf_best <- confusionMatrix(predictions_rf_best, test_data$Group)
@@ -74,4 +79,4 @@ accuracy_anterior <- confusion_matrix_anterior$overall["Accuracy"]
 
 # Comparar las precisiónes de ambos modelos
 cat("Accuracy del modelo anterior: ", accuracy_anterior, "\n")
-cat("Accuracy del modelo Random Forest: ", accuracy_rf, "\n")
+cat("Accuracy del modelo Random Forest: ", accuracy_rf_best, "\n")
