@@ -43,22 +43,23 @@ results <- data.frame()
 set.seed(123)
 
 # Bucle a través de los hiperparámetros
-for (i in 1:nrow(hyper_grid)) {
-  ntree <- hyper_grid[i, "ntree"]
-  mtry <- hyper_grid[i, "mtry"]
-  
-  # Ajustar el modelo de Random Forest con los hiperparámetros actuales
-  model <- randomForest(Group ~ ., data = train_data, ntree = ntree, mtry = mtry)
-  
-  # Calcular la precisión en el conjunto de prueba
-  pred <- predict(model, newdata = test_data)
-  acc <- accuracy(test_data$Group, pred)
-  
-  # Agregar los resultados al data.frame
-  results <- rbind(results, data.frame(ntree = ntree, mtry = mtry, accuracy = acc))
-}
+# for (i in 1:nrow(hyper_grid)) {
+#   ntree <- hyper_grid[i, "ntree"]
+#   mtry <- hyper_grid[i, "mtry"]
+#   
+#   # Ajustar el modelo de Random Forest con los hiperparámetros actuales
+#   model <- randomForest(Group ~ ., data = train_data, ntree = ntree, mtry = mtry)
+#   
+#   # Calcular la precisión en el conjunto de prueba
+#   pred <- predict(model, newdata = test_data)
+#   acc <- accuracy(test_data$Group, pred)
+#   
+#   # Agregar los resultados al data.frame
+#   results <- rbind(results, data.frame(ntree = ntree, mtry = mtry, accuracy = acc))
+# }
 
 # write.csv2(results, file = "decisiontree.results.csv")
+results <- read.csv2(file = "decisiontree.results.csv")
 
 # Encontrar los hiperparámetros que producen la mayor precisión
 best_params <- results[which.max(results$accuracy), ]
