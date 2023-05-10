@@ -110,7 +110,7 @@ print(svm_tuned_accuracy)
 library(FactoMineR)
 
 # Realizar PCA en los datos de entrenamiento
-pca_train <- PCA(train_data[,-1], scale.unit = TRUE, ncp = 2)
+pca_train <- PCA(train_data[,-c(1, 2, 3, 4)], scale.unit = TRUE, ncp = 2)
 
 # Agregar las etiquetas de los valores reales y las predicciones al conjunto de datos transformado
 train_data_2d <- cbind.data.frame(pca_train$ind$coord, Actual = train_data$Group)
