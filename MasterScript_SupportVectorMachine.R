@@ -98,6 +98,7 @@ svm_tuned_pred <- predict(svm_model_tuned, newdata = test_data)
 
 # Calcular la matriz de confusión y la precisión
 svm_tuned_confusion_matrix <- confusionMatrix(svm_tuned_pred, test_data$Group)
+saveRDS(svm_tuned_confusion_matrix, file = "svm_tuned_confusion_matrix.RDS")
 svm_tuned_accuracy <- svm_tuned_confusion_matrix$overall["Accuracy"]
 
 print(svm_tuned_confusion_matrix)
@@ -131,6 +132,4 @@ plot_svm <- ggplot(train_data_2d, aes(x = Dim.1, y = Dim.2, color = Actual, shap
 
 print(plot_svm)
 
-
-## TESTEAR GRAFICA 3D INTERACTIVA:
 
