@@ -92,7 +92,7 @@ history <- model %>% fit(
 # pasará por los datos de entrenamiento 20 veces en lotes de 32 ejemplos a la vez. validation_split = 0.2 reserva el
 # 20% de los datos para validar el rendimiento del modelo durante el entrenamiento.
 
-# Ahora puedes intentar evaluar el modelo de nuevo
+# Evaluar el modelo de nuevo
 score <- model %>% evaluate(
     x = as.matrix(test_data[, -which(names(test_data) == "Group")]),
     y = test_labels
@@ -174,7 +174,12 @@ for (i in 1:nrow(hyper_grid)) {
 
 # Ver los resultados
 print(results)
-saveRDS(results, "deeplearning_results.RDS")data_folder <- "~/GitHub/TFM-Statistical-Learning/PETmasked"
+saveRDS(results, "deeplearning_results.RDS")
+
+
+## TESTEO cargando imagenes directamente
+
+data_folder <- "~/GitHub/TFM-Statistical-Learning/PETmasked"
 
 # Cargar los archivos con extensión .hdr en la carpeta
 nifti_data_z30 <- list()
