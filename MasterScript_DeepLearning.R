@@ -256,12 +256,27 @@ names(pixel_weights) <- paste0("V", 1:(dim1 * dim2))
 
 
 # 2. Crea un dataframe basándote en combined_data para generar nuevas variables
-combined_data$Avg_Important_Pixels <- rowMeans(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * pixel_weights)
-combined_data$Median_Important_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * pixel_weights, 1, median, na.rm = TRUE)
-combined_data$Max_Important_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * pixel_weights, 1, max, na.rm = TRUE)
-combined_data$Min_Important_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * pixel_weights, 1, min, na.rm = TRUE)
-combined_data$StdDev_Important_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * pixel_weights, 1, sd, na.rm = TRUE)
-combined_data$Var_Important_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * pixel_weights, 1, var, na.rm = TRUE)
+# Crear nuevas características basadas en points.N
+combined_data$Avg_N_Pixels <- rowMeans(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1))
+combined_data$Median_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, median, na.rm = TRUE)
+combined_data$Max_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, max, na.rm = TRUE)
+combined_data$Min_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, min, na.rm = TRUE)
+combined_data$StdDev_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, sd, na.rm = TRUE)
+combined_data$Var_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, var, na.rm = TRUE)
+combined_data$Skewness_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, skewness, na.rm = TRUE)
+combined_data$Kurtosis_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, kurtosis, na.rm = TRUE)
+
+
+# Crear nuevas características basadas en points.P
+combined_data$Avg_P_Pixels <- rowMeans(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1))
+combined_data$Median_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, median, na.rm = TRUE)
+combined_data$Max_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, max, na.rm = TRUE)
+combined_data$Min_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, min, na.rm = TRUE)
+combined_data$StdDev_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, sd, na.rm = TRUE)
+combined_data$Var_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, var, na.rm = TRUE)
+combined_data$Skewness_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, skewness, na.rm = TRUE)
+combined_data$Kurtosis_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, kurtosis, na.rm = TRUE)
+
 
 # 3. Divide los datos en conjuntos de entrenamiento y prueba
 set.seed(123)
@@ -331,6 +346,7 @@ for (i in 1:nrow(hyper_grid)) {
     # Añadir los resultados a la tabla de resultados
     ponderated_results <- rbind(ponderated_results, cbind(hyper_grid[i, ], Loss = score[[1]], Accuracy = score[[2]]))
 }
+
 
 # Ver los resultados
 print(ponderated_results) # 0'85
