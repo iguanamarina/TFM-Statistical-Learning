@@ -170,7 +170,6 @@ print(confusion_matrix)
 cat("Accuracy: ", confusion_matrix$overall["Accuracy"], "\n")
 
 
-
 # Exportar datos
 write.csv(combined_data, "combined_data.csv")
 # Exportar la matriz de confusión

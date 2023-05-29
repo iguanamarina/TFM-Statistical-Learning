@@ -9,8 +9,8 @@
 
 # Dependencias Python 
 library(reticulate)
-reticulate::use_condaenv("my_env")
-reticulate::py_install(c("tensorflow", "numpy", "keras"), envname = "my_env")
+reticulate::use_condaenv("base")
+reticulate::py_install(c("tensorflow", "numpy", "keras"), envname = "base")
 
 # Instalar el paquete keras si no está instalado
 if (!requireNamespace("keras", quietly = TRUE)) {
@@ -20,10 +20,11 @@ if (!requireNamespace("keras", quietly = TRUE)) {
 # Cargar el paquete
 library(keras)
 library(caret)
+library(tensorflow)
 
 # Establecer el directorio de trabajo
-setwd("~/GitHub/TFM-Statistical-Learning")
-# setwd("C:/Users/Juan A. Arias/Desktop/TFM")
+# setwd("~/GitHub/TFM-Statistical-Learning")
+setwd("C:/Users/Juan A. Arias/Desktop/TFM")
 
 # Cargar los datos preprocesados
 combined_data <- read.csv("combined_data.csv")
@@ -148,10 +149,11 @@ for (i in 1:nrow(hyper_grid)) {
     
     # Compilar el modelo
     model %>% compile(
-        optimizer = optimizer_rmsprop(lr = lr),
+        optimizer = optimizer_rmsprop(learning_rate = lr),
         loss = "categorical_crossentropy",
         metrics = c("accuracy")
     )
+
     
     # Entrenar el modelo
     history <- model %>% fit(
@@ -179,37 +181,39 @@ saveRDS(results, "deeplearning_results.RDS")
 
 ## TESTEO cargando imagenes directamente
 
-data_folder <- "~/GitHub/TFM-Statistical-Learning/PETmasked"
+# data_folder <- "~/GitHub/TFM-Statistical-Learning/PETmasked"
+# data_folder <- "C:/Users/Juan A. Arias/Desktop/TFM/PETmasked"
+
 
 # Cargar los archivos con extensión .hdr en la carpeta
-nifti_data_z30 <- list()
+# nifti_data_z30 <- list()
 
 # Loop de carga y quedarnos ya con Z=30 solamente
-for (filename in list.files(data_folder)) {
-    if (endsWith(filename, ".hdr")) {
-        nifti_file <- file.path(data_folder, filename)
-        nifti_full <- oro.nifti::readNIfTI(nifti_file)
-        nifti_data_z30 <- c(nifti_data_z30, list(as.array(nifti_full)[,,30]))
-    }
-}
+# for (filename in list.files(data_folder)) {
+#     if (endsWith(filename, ".hdr")) {
+#         nifti_file <- file.path(data_folder, filename)
+#         nifti_full <- oro.nifti::readNIfTI(nifti_file)
+#         nifti_data_z30 <- c(nifti_data_z30, list(as.array(nifti_full)[,,30]))
+#     }
+# }
 
 # Trasponer a 1x7505
-nifti_matrix_flat <- matrix(nrow = length(nifti_data_z30), ncol = 79 * 95)
-
-for (i in 1:length(nifti_data_z30)) {
-    nifti_matrix_flat[i,] <- as.vector(t(nifti_data_z30[[i]]))
-}
-
-dim(nifti_matrix_flat)
+# nifti_matrix_flat <- matrix(nrow = length(nifti_data_z30), ncol = 79 * 95)
+# 
+# for (i in 1:length(nifti_data_z30)) {
+#     nifti_matrix_flat[i,] <- as.vector(t(nifti_data_z30[[i]]))
+# }
+# 
+# dim(nifti_matrix_flat)
 
 # Leer los datos demográficos desde un archivo CSV
-demographic_data <- read.csv("Demographics.csv", sep=";", header=TRUE)
+# demographic_data <- read.csv("Demographics.csv", sep=";", header=TRUE)
 
 # Mantener solo las variables "Group", "Age" y "Sex"
-demographic_data <- demographic_data[, c("Group", "Age", "Sex")]
+# demographic_data <- demographic_data[, c("Group", "Age", "Sex")]
 
 # Combinar los datos demográficos con los datos de imagen aplanados
-combined_data <- cbind(demographic_data, as.matrix(nifti_matrix_flat))
+# combined_data <- cbind(demographic_data, as.matrix(nifti_matrix_flat))
 
 # Reemplazar todos los valores NaN con 0
 # combined_data[is.na(combined_data)] <- 0
@@ -222,12 +226,34 @@ combined_data <- cbind(demographic_data, as.matrix(nifti_matrix_flat))
 
 ## INGENIERÍA DE CARACTERÍSTICAS
 
-# 1. Genera aleatoriamente un dataframe de 7505 columnas en que asignes pesos de 0 o 1 a esos pixeles
-set.seed(123)  # para asegurar reproducibilidad
-pixel_weights <- sample(0:1, 7505, replace=TRUE, prob=c(0.8, 0.2))
-names(pixel_weights) <- paste0("V", 1:7505)
+# 1. Carga las coordenadas con pesos segun SCC_COMP_1
 
-guardar <- combined_data # por si a caso
+# Dimensiones originales de la imagen
+dim1 <- 79
+dim2 <- 95
+
+# Inicializar un vector de ceros con longitud 7505 para representar todos los píxeles
+pixel_weights <- rep(0, dim1 * dim2)
+
+# Función para convertir las coordenadas de 2D a 1D
+convert_2D_to_1D <- function(row, col, dim1) {
+  return((row - 1) * dim1 + col)
+}
+
+# Actualizar los valores en pixel_weights basados en 'points.N' y 'points.P'
+for(i in 1:nrow(list_points$points.N)) {
+  idx <- convert_2D_to_1D(list_points$points.N[i, "row"], list_points$points.N[i, "col"], dim1)
+  pixel_weights[idx] <- 1
+}
+
+for(i in 1:nrow(list_points$points.P)) {
+  idx <- convert_2D_to_1D(list_points$points.P[i, "row"], list_points$points.P[i, "col"], dim1)
+  pixel_weights[idx] <- -1
+}
+
+# Asignar nombres a pixel_weights
+names(pixel_weights) <- paste0("V", 1:(dim1 * dim2))
+
 
 # 2. Crea un dataframe basándote en combined_data para generar nuevas variables
 combined_data$Avg_Important_Pixels <- rowMeans(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * pixel_weights)
@@ -282,7 +308,7 @@ for (i in 1:nrow(hyper_grid)) {
     
     # Compilar el modelo
     model %>% compile(
-        optimizer = optimizer_rmsprop(lr = lr),
+        optimizer = optimizer_rmsprop(learning_rate = lr),
         loss = "categorical_crossentropy",
         metrics = c("accuracy")
     )
@@ -307,7 +333,7 @@ for (i in 1:nrow(hyper_grid)) {
 }
 
 # Ver los resultados
-print(ponderated_results)
+print(ponderated_results) # 0'85
 saveRDS(ponderated_results, "deeplearning_ponderado_results.RDS")
 
 
