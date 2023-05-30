@@ -23,8 +23,8 @@ library(caret)
 library(tensorflow)
 
 # Establecer el directorio de trabajo
-# setwd("~/GitHub/TFM-Statistical-Learning")
-setwd("C:/Users/Juan A. Arias/Desktop/TFM")
+setwd("~/GitHub/TFM-Statistical-Learning")
+# setwd("C:/Users/Juan A. Arias/Desktop/TFM")
 
 # Cargar los datos preprocesados
 combined_data <- read.csv("combined_data.csv")
@@ -39,7 +39,7 @@ combined_data$Sex <- ifelse(combined_data$Sex == "M", 2, 1)
 
 # Dividir los datos en conjuntos de entrenamiento y prueba
 set.seed(123)
-train_index <- createDataPartition(y = combined_data$Group, p = 0.8, list = FALSE)
+train_index <- createDataPartition(y = combined_data$Group, p = 0.9, list = FALSE)
 train_data <- combined_data[train_index, ]
 test_data <- combined_data[-train_index, ]
 
@@ -82,7 +82,7 @@ history <- model %>% fit(
     y = train_labels,
     epochs = 20,
     batch_size = 32,
-    validation_split = 0.2
+    validation_split = 0.1
 )
 
 # Este código compila el modelo con la función de pérdida de entropía cruzada categórica (una elección común 
@@ -161,7 +161,7 @@ for (i in 1:nrow(hyper_grid)) {
         y = train_labels,
         epochs = epochs,
         batch_size = 128,
-        validation_split = 0.2
+        validation_split = 0.1 
     )
     
     # Evaluar el modelo en el conjunto de prueba
@@ -175,56 +175,14 @@ for (i in 1:nrow(hyper_grid)) {
 }
 
 # Ver los resultados
-print(results)
+print(results) # 0'8
 saveRDS(results, "deeplearning_results.RDS")
 
 
-## TESTEO cargando imagenes directamente
-
-# data_folder <- "~/GitHub/TFM-Statistical-Learning/PETmasked"
-# data_folder <- "C:/Users/Juan A. Arias/Desktop/TFM/PETmasked"
-
-
-# Cargar los archivos con extensión .hdr en la carpeta
-# nifti_data_z30 <- list()
-
-# Loop de carga y quedarnos ya con Z=30 solamente
-# for (filename in list.files(data_folder)) {
-#     if (endsWith(filename, ".hdr")) {
-#         nifti_file <- file.path(data_folder, filename)
-#         nifti_full <- oro.nifti::readNIfTI(nifti_file)
-#         nifti_data_z30 <- c(nifti_data_z30, list(as.array(nifti_full)[,,30]))
-#     }
-# }
-
-# Trasponer a 1x7505
-# nifti_matrix_flat <- matrix(nrow = length(nifti_data_z30), ncol = 79 * 95)
-# 
-# for (i in 1:length(nifti_data_z30)) {
-#     nifti_matrix_flat[i,] <- as.vector(t(nifti_data_z30[[i]]))
-# }
-# 
-# dim(nifti_matrix_flat)
-
-# Leer los datos demográficos desde un archivo CSV
-# demographic_data <- read.csv("Demographics.csv", sep=";", header=TRUE)
-
-# Mantener solo las variables "Group", "Age" y "Sex"
-# demographic_data <- demographic_data[, c("Group", "Age", "Sex")]
-
-# Combinar los datos demográficos con los datos de imagen aplanados
-# combined_data <- cbind(demographic_data, as.matrix(nifti_matrix_flat))
-
-# Reemplazar todos los valores NaN con 0
-# combined_data[is.na(combined_data)] <- 0
-
-
-
 ####
-# PONDERACIÓN DE CARACTERÍSTICAS
+# INGENIERÍA DE CARACTERÍSTICAS
 ####
 
-## INGENIERÍA DE CARACTERÍSTICAS
 
 # 1. Carga las coordenadas con pesos segun SCC_COMP_1
 
@@ -256,31 +214,97 @@ names(pixel_weights) <- paste0("V", 1:(dim1 * dim2))
 
 
 # 2. Crea un dataframe basándote en combined_data para generar nuevas variables
+
+library(e1071)
+
+# Crear nuevas características basadas en puntos relevantes
+combined_data$Avg_Important_Pixels <- rowMeans(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * pixel_weights)
+combined_data$Median_Important_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * pixel_weights, 1, median, na.rm = TRUE)
+combined_data$Max_Important_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * pixel_weights, 1, max, na.rm = TRUE)
+combined_data$Min_Important_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * pixel_weights, 1, min, na.rm = TRUE)
+combined_data$StdDev_Important_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * pixel_weights, 1, sd, na.rm = TRUE)
+combined_data$Var_Important_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * pixel_weights, 1, var, na.rm = TRUE)
+
 # Crear nuevas características basadas en points.N
 combined_data$Avg_N_Pixels <- rowMeans(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1))
 combined_data$Median_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, median, na.rm = TRUE)
 combined_data$Max_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, max, na.rm = TRUE)
-combined_data$Min_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, min, na.rm = TRUE)
 combined_data$StdDev_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, sd, na.rm = TRUE)
 combined_data$Var_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, var, na.rm = TRUE)
 combined_data$Skewness_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, skewness, na.rm = TRUE)
 combined_data$Kurtosis_N_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == 1), 1, kurtosis, na.rm = TRUE)
 
-
 # Crear nuevas características basadas en points.P
 combined_data$Avg_P_Pixels <- rowMeans(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1))
 combined_data$Median_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, median, na.rm = TRUE)
 combined_data$Max_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, max, na.rm = TRUE)
-combined_data$Min_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, min, na.rm = TRUE)
 combined_data$StdDev_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, sd, na.rm = TRUE)
 combined_data$Var_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, var, na.rm = TRUE)
 combined_data$Skewness_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, skewness, na.rm = TRUE)
 combined_data$Kurtosis_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, kurtosis, na.rm = TRUE)
 
+# Función para calcular la diferencia con los vecinos
+neighbor_diff_basic <- function(image, dim1, dim2) {
+    image_matrix <- matrix(image, nrow = dim1, ncol = dim2)
+    diff_sum <- 0
+    for (row in 1:dim1) {
+        for (col in 1:dim2) {
+            if (pixel_weights[(row - 1) * dim1 + col] == 1) {
+                neighbors <- image_matrix[max(1, row - 1):min(dim1, row + 1),
+                                          max(1, col - 1):min(dim2, col + 1)]
+                diff_sum <- diff_sum + sum(abs(neighbors - image_matrix[row, col]))
+            }
+        }
+    }
+    return(diff_sum)
+}
+
+# Función para calcular la diferencia con los vecinos separada por sub-grupo    
+neighbor_diff <- function(image, dim1, dim2, pixel_weights) {
+    image_matrix <- matrix(image, nrow = dim1, ncol = dim2)
+    diff_sum <- 0
+    for (row in 1:dim1) {
+        for (col in 1:dim2) {
+            if (pixel_weights[(row - 1) * dim1 + col] == 1) {
+                neighbors <- image_matrix[max(1, row - 1):min(dim1, row + 1),
+                                          max(1, col - 1):min(dim2, col + 1)]
+                diff_sum <- diff_sum + sum(abs(neighbors - image_matrix[row, col]))
+            }
+        }
+    }
+    return(diff_sum)
+}
+
+# Inicializar un vector de ceros con longitud 7505 para representar todos los píxeles
+pixel_weights_N <- rep(0, dim1 * dim2)
+pixel_weights_P <- rep(0, dim1 * dim2)
+
+# Actualizar los valores en pixel_weights_N y pixel_weights_P
+for(i in 1:nrow(list_points$points.N)) {
+    idx <- convert_2D_to_1D(list_points$points.N[i, "row"], list_points$points.N[i, "col"], dim1)
+    pixel_weights_N[idx] <- 1
+}
+
+for(i in 1:nrow(list_points$points.P)) {
+    idx <- convert_2D_to_1D(list_points$points.P[i, "row"], list_points$points.P[i, "col"], dim1)
+    pixel_weights_P[idx] <- -1
+}
+
+# Calcular la diferencia con los vecinos para cada imagen
+
+combined_data$Neighbor_Diff <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))], 
+                                     1, neighbor_diff_basic, dim1 = dim1, dim2 = dim2)
+
+combined_data$Neighbor_Diff_N <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))], 
+                                       1, neighbor_diff, dim1 = dim1, dim2 = dim2, pixel_weights = pixel_weights_N)
+
+combined_data$Neighbor_Diff_P <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))], 
+                                       1, neighbor_diff, dim1 = dim1, dim2 = dim2, pixel_weights = pixel_weights_P)
+
 
 # 3. Divide los datos en conjuntos de entrenamiento y prueba
 set.seed(123)
-train_index <- createDataPartition(y = combined_data$Group, p = 0.8, list = FALSE)
+train_index <- createDataPartition(y = combined_data$Group, p = 0.9, list = FALSE)
 train_data <- combined_data[train_index, ]
 test_data <- combined_data[-train_index, ]
 
@@ -334,7 +358,7 @@ for (i in 1:nrow(hyper_grid)) {
         y = train_labels,
         epochs = epochs,
         batch_size = 128,
-        validation_split = 0.2
+        validation_split = 0.1 
     )
     
     # Evaluar el modelo en el conjunto de prueba
@@ -349,7 +373,7 @@ for (i in 1:nrow(hyper_grid)) {
 
 
 # Ver los resultados
-print(ponderated_results) # 0'85
+print(ponderated_results) # 0.91
 saveRDS(ponderated_results, "deeplearning_ponderado_results.RDS")
 
 
