@@ -9,8 +9,8 @@ library(randomForest)
 library(caret)
 
 # Establecer el directorio de trabajo
-# setwd("~/GitHub/TFM-Statistical-Learning")
-setwd("C:/Users/Juan A. Arias/Desktop/TFM")
+setwd("~/GitHub/TFM-Statistical-Learning")
+# setwd("C:/Users/Juan A. Arias/Desktop/TFM")
 
 # Cargar los datos preprocesados
 combined_data <- read.csv("combined_data.csv")

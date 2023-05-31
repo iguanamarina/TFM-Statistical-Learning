@@ -59,7 +59,7 @@ combined_data[is.na(combined_data)] <- 0
 
 # Dividir los datos en conjuntos de entrenamiento y prueba
 set.seed(42)
-train_index <- createDataPartition(combined_data[, "Group"], p = 0.8, list = FALSE)
+train_index <- createDataPartition(combined_data[, "Group"], p = 0.9, list = FALSE)
 train_data <- combined_data[train_index, ]
 test_data <- combined_data[-train_index, ]
 
