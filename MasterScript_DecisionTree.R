@@ -165,12 +165,9 @@ confusion_matrix <- confusionMatrix(predicted_labels, test_data$Group)
 
 # Imprimir la matriz de confusión
 print(confusion_matrix)
+saveRDS(confusion_matrix, file = "decisiontree_confusionmatrix.RDS")
 
 # Imprimir la precisión general
 cat("Accuracy: ", confusion_matrix$overall["Accuracy"], "\n")
 
 
-# Exportar datos
-write.csv(combined_data, "combined_data.csv")
-# Exportar la matriz de confusión
-saveRDS(confusion_matrix, "Tree_confusion_matrix.RDS")

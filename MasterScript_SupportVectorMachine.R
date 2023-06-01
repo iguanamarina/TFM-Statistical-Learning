@@ -27,7 +27,7 @@ combined_data <- read.csv("combined_data.csv")
 
 # Dividir los datos en conjuntos de entrenamiento y prueba
 set.seed(123)
-train_index <- createDataPartition(y = combined_data$Group, p = 0.8, list = FALSE)
+train_index <- createDataPartition(y = combined_data$Group, p = 0.9, list = FALSE)
 train_data <- combined_data[train_index, ]
 test_data <- combined_data[-train_index, ]
 
@@ -98,6 +98,7 @@ svm_tuned_pred <- predict(svm_model_tuned, newdata = test_data)
 
 # Calcular la matriz de confusión y la precisión
 svm_tuned_confusion_matrix <- confusionMatrix(svm_tuned_pred, test_data$Group)
+
 saveRDS(svm_tuned_confusion_matrix, file = "svm_tuned_confusion_matrix.RDS")
 svm_tuned_accuracy <- svm_tuned_confusion_matrix$overall["Accuracy"]
 

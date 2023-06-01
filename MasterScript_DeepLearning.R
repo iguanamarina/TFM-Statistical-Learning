@@ -377,6 +377,10 @@ print(ponderated_results) # 0.91
 saveRDS(ponderated_results, "deeplearning_ponderado_results.RDS")
 
 
+
+
+
+
 ## PONDERACIÓN DE MUESTRAS EN LA RED NEURONAL
 
 # Inicializar un data frame para almacenar los resultados

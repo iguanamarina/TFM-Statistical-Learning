@@ -17,7 +17,7 @@ combined_data <- read.csv("combined_data.csv")
 
 # Dividir los datos en conjuntos de entrenamiento y prueba
 set.seed(123)
-train_index <- createDataPartition(y = combined_data$Group, p = 0.8, list = FALSE)
+train_index <- createDataPartition(y = combined_data$Group, p = 0.9, list = FALSE)
 train_data <- combined_data[train_index, ]
 test_data <- combined_data[-train_index, ]
 
@@ -43,20 +43,20 @@ results <- data.frame()
 set.seed(123)
 
 # Bucle a través de los hiperparámetros
-# for (i in 1:nrow(hyper_grid)) {
-#   ntree <- hyper_grid[i, "ntree"]
-#   mtry <- hyper_grid[i, "mtry"]
-#   
-#   # Ajustar el modelo de Random Forest con los hiperparámetros actuales
-#   model <- randomForest(Group ~ ., data = train_data, ntree = ntree, mtry = mtry)
-#   
-#   # Calcular la precisión en el conjunto de prueba
-#   pred <- predict(model, newdata = test_data)
-#   acc <- accuracy(test_data$Group, pred)
-#   
-#   # Agregar los resultados al data.frame
-#   results <- rbind(results, data.frame(ntree = ntree, mtry = mtry, accuracy = acc))
-# }
+for (i in 1:nrow(hyper_grid)) {
+  ntree <- hyper_grid[i, "ntree"]
+  mtry <- hyper_grid[i, "mtry"]
+
+  # Ajustar el modelo de Random Forest con los hiperparámetros actuales
+  model <- randomForest(Group ~ ., data = train_data, ntree = ntree, mtry = mtry)
+
+  # Calcular la precisión en el conjunto de prueba
+  pred <- predict(model, newdata = test_data)
+  acc <- accuracy(test_data$Group, pred)
+
+  # Agregar los resultados al data.frame
+  results <- rbind(results, data.frame(ntree = ntree, mtry = mtry, accuracy = acc))
+}
 
 # write.csv2(results, file = "decisiontree.results.csv")
 results <- read.csv2(file = "decisiontree.results.csv")
@@ -72,6 +72,7 @@ predictions_rf_best <- predict(rf_model_tuned, newdata = test_data)
 
 # Crear matriz de confusión y calcular la precisión
 confusion_matrix_rf_best <- confusionMatrix(predictions_rf_best, test_data$Group)
+saveRDS(confusion_matrix_rf_best, file = "randomforest_decisiontree.RDS")
 accuracy_rf_best <- confusion_matrix_rf_best$overall["Accuracy"]
 
 # Cargar la matriz de confusión del modelo anterior
@@ -81,3 +82,39 @@ accuracy_anterior <- confusion_matrix_anterior$overall["Accuracy"]
 # Comparar las precisiónes de ambos modelos
 cat("Accuracy del modelo anterior: ", accuracy_anterior, "\n")
 cat("Accuracy del modelo Random Forest: ", accuracy_rf_best, "\n")
+
+
+# Obtener el número total de árboles
+num_trees <- length(rf_model_tuned$err.rate[,1])
+
+# Crear un gráfico vacío con las etiquetas deseadas
+plot(1:num_trees, 
+     rf_model_tuned$err.rate[1:num_trees,1], 
+     type="n", 
+     xlab="",
+     ylab="",
+     ylim=c(0,0.5),
+     main="")
+
+# Añadir las etiquetas de los ejes con un tamaño de fuente más grande
+mtext("Número de Árboles", side = 1, line = 3, cex = 1.2)
+mtext("Tasa de Error", side = 2, line = 3, cex = 1.2)
+
+# Añadir las líneas del gráfico de error
+lines(1:num_trees, rf_model_tuned$err.rate[1:num_trees,1], col = "black", lwd = 2)
+lines(1:num_trees, rf_model_tuned$err.rate[1:num_trees,2], col = "red", lwd = 2)
+lines(1:num_trees, rf_model_tuned$err.rate[1:num_trees,3], col = "green", lwd = 2)
+
+# Añadir la leyenda
+legend("topright", 
+       legend = c("Error OOB General", "Error OOB Clase 1", "Error OOB Clase 2"), 
+       lty = 1, 
+       col = c("black", "red", "green"), 
+       bty = "n", 
+       cex = 1.2)
+
+
+
+# Plot de la importancia de las variables
+varImpPlot(rf_model_tuned, main = "", n.var = 20)
+
