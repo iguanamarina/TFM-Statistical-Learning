@@ -183,6 +183,7 @@ saveRDS(results, "deeplearning_results.RDS")
 # INGENIERÍA DE CARACTERÍSTICAS
 ####
 
+list_points <- readRDS("~/GitHub/TFM-Statistical-Learning/list_points.RDS")
 
 # 1. Carga las coordenadas con pesos segun SCC_COMP_1
 
