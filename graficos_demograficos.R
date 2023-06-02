@@ -33,7 +33,7 @@ edad_boxplot <- ggplot(data_combined, aes(x = Sexo, y = Edad, fill = Sexo)) +
   scale_fill_manual(values = c("Total" = "#A9A9A9", "Mujer" = "#99C1E1", "Hombre" = "#D1A5B7")) +
   labs(x = "", y = "Edad") +
   theme_minimal() +
-  theme(legend.position = "none", axis.text.y = element_text(size = 12), axis.text.x = element_text(size = 12), axis.title.y = element_text(size = 14)) +
+  theme(legend.position = "none", axis.text.y = element_text(size = 12), axis.text.x = element_text(size = 22), axis.title.y = element_text(size = 22)) +
   coord_cartesian(ylim = c(min(data_combined$Edad) - 10, max(data_combined$Edad) + 10))
 
 print(edad_boxplot)
@@ -45,7 +45,7 @@ genero_barplot <- ggplot(data, aes(x = Sexo, fill = Sexo)) +
   scale_y_continuous(limits = c(0, 90)) +
   labs(x = "", y = "Número de pacientes") +
   theme_minimal() +
-  theme(legend.position = "none", axis.text.y = element_text(size = 12), axis.text.x = element_text(size = 12), axis.title.y = element_text(size = 14), plot.margin = margin(0, 0, 0, 25))
+  theme(legend.position = "none", axis.text.y = element_text(size = 12), axis.text.x = element_text(size = 22), axis.title.y = element_text(size = 22))
 
 print(genero_barplot)
 
@@ -57,7 +57,7 @@ diagnostico_barplot <- ggplot(data, aes(x = `Grupo de Diagnóstico`, fill = `Gru
   scale_fill_manual(values = c("Alzheimer" = "#A4C4A8", "Control" = "#DFB78E")) +
   labs(x = "", y = "Número de pacientes") +
   theme_minimal() +
-  theme(legend.position = "none", axis.text.y = element_text(size = 12), axis.text.x = element_text(size = 12), axis.title.y = element_text(size = 14))
+  theme(legend.position = "none", axis.text.y = element_text(size = 12), axis.text.x = element_text(size = 22), axis.title.y = element_text(size = 22))
 
 print(diagnostico_barplot)
 
@@ -68,6 +68,6 @@ diagnostico_sexo_barplot <- ggplot(data, aes(x = `Grupo de Diagnóstico`, fill =
   scale_fill_manual(values = c("Mujer" = "#99C1E1", "Hombre" = "#D1A5B7")) +
   labs(x = "", y = "Número de pacientes") +
   theme_minimal() +
-  theme(legend.position = c(0.98, 0.98), legend.justification = c(1, 1), legend.background = element_blank(), legend.title = element_blank(), axis.text.y = element_text(size = 12), axis.text.x = element_text(size = 12), axis.title.y = element_text(size = 14))
+  theme(legend.position = c(0.98, 0.98), legend.justification = c(1, 1), legend.background = element_blank(), legend.title = element_blank(), axis.text.y = element_text(size = 22), axis.text.x = element_text(size = 22), axis.title.y = element_text(size = 22))
 
 print(diagnostico_sexo_barplot)
