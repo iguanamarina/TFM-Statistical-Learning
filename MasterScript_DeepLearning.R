@@ -38,7 +38,7 @@ combined_data$Group <- ifelse(combined_data$Group == "AD", 1, 0)
 combined_data$Sex <- ifelse(combined_data$Sex == "M", 2, 1)
 
 # Dividir los datos en conjuntos de entrenamiento y prueba
-set.seed(123)
+set.seed(234)
 train_index <- createDataPartition(y = combined_data$Group, p = 0.9, list = FALSE)
 train_data <- combined_data[train_index, ]
 test_data <- combined_data[-train_index, ]
@@ -178,6 +178,32 @@ for (i in 1:nrow(hyper_grid)) {
 print(results) # 0'8
 saveRDS(results, "deeplearning_results.RDS")
 
+library(tensorflow)
+
+# Predecir las probabilidades
+test_probabilities <- model %>% predict(as.matrix(test_data[, -which(names(test_data) == "Group")]))
+
+# Convertir las probabilidades en clases
+test_predictions <- test_probabilities %>%
+    `>`(0.5) %>%
+    k_cast("int32") %>%
+    as.array() %>%
+    as.integer()
+
+# Convertir las probabilidades en clases
+test_predictions <- apply(test_probabilities, 1, which.max) - 1
+
+# Asegúrate de que test_predictions es un factor con los niveles correctos
+test_predictions <- as.factor(test_predictions)
+
+# Convertir test_labels_vector en factor
+test_labels_vector <- as.factor(test_labels_vector)
+
+# Y deberías poder calcular la matriz de confusión sin problemas
+cm_ap <- confusionMatrix(test_predictions, test_labels_vector)
+print(cm_ap)
+
+
 
 ####
 # INGENIERÍA DE CARACTERÍSTICAS
@@ -244,21 +270,6 @@ combined_data$Var_P_Pixels <- apply(combined_data[, -which(names(combined_data) 
 combined_data$Skewness_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, skewness, na.rm = TRUE)
 combined_data$Kurtosis_P_Pixels <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))] * (pixel_weights == -1), 1, kurtosis, na.rm = TRUE)
 
-# Función para calcular la diferencia con los vecinos
-neighbor_diff_basic <- function(image, dim1, dim2) {
-    image_matrix <- matrix(image, nrow = dim1, ncol = dim2)
-    diff_sum <- 0
-    for (row in 1:dim1) {
-        for (col in 1:dim2) {
-            if (pixel_weights[(row - 1) * dim1 + col] == 1) {
-                neighbors <- image_matrix[max(1, row - 1):min(dim1, row + 1),
-                                          max(1, col - 1):min(dim2, col + 1)]
-                diff_sum <- diff_sum + sum(abs(neighbors - image_matrix[row, col]))
-            }
-        }
-    }
-    return(diff_sum)
-}
 
 # Función para calcular la diferencia con los vecinos separada por sub-grupo    
 neighbor_diff <- function(image, dim1, dim2, pixel_weights) {
@@ -288,13 +299,10 @@ for(i in 1:nrow(list_points$points.N)) {
 
 for(i in 1:nrow(list_points$points.P)) {
     idx <- convert_2D_to_1D(list_points$points.P[i, "row"], list_points$points.P[i, "col"], dim1)
-    pixel_weights_P[idx] <- -1
+    pixel_weights_P[idx] <- 1
 }
 
 # Calcular la diferencia con los vecinos para cada imagen
-
-combined_data$Neighbor_Diff <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))], 
-                                     1, neighbor_diff_basic, dim1 = dim1, dim2 = dim2)
 
 combined_data$Neighbor_Diff_N <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))], 
                                        1, neighbor_diff, dim1 = dim1, dim2 = dim2, pixel_weights = pixel_weights_N)
@@ -304,7 +312,7 @@ combined_data$Neighbor_Diff_P <- apply(combined_data[, -which(names(combined_dat
 
 
 # 3. Divide los datos en conjuntos de entrenamiento y prueba
-set.seed(123)
+set.seed(345)
 train_index <- createDataPartition(y = combined_data$Group, p = 0.9, list = FALSE)
 train_data <- combined_data[train_index, ]
 test_data <- combined_data[-train_index, ]
@@ -329,8 +337,21 @@ hyper_grid <- expand.grid(
     epochs = c(10, 20, 30)
 )
 
-# 7. Inicializar un data frame para almacenar los resultados
+# 7. Inicializar un data frame y calcula el sample wight
 ponderated_results <- data.frame()
+
+# Calcular la varianza de cada imagen
+image_variances <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))], 1, var)
+
+# Normalizar los valores para que estén en el rango [0,1]
+image_weights <- image_variances / max(image_variances)
+
+# Asignar a cada imagen el peso calculado
+sample_weights <- image_weights[train_index]
+
+
+
+###ªªª###
 
 # 8. Bucle sobre todas las combinaciones de hiperparámetros
 for (i in 1:nrow(hyper_grid)) {
@@ -353,12 +374,13 @@ for (i in 1:nrow(hyper_grid)) {
         metrics = c("accuracy")
     )
     
-    # Entrenar el modelo SIN ponderación de muestras
+    # Entrenar el modelo CON ponderación de muestras
     history <- model %>% fit(
         x = as.matrix(train_data[, -which(names(train_data) == "Group")]),
         y = train_labels,
         epochs = epochs,
         batch_size = 128,
+        sample_weight = sample_weights,
         validation_split = 0.1 
     )
     
@@ -375,123 +397,30 @@ for (i in 1:nrow(hyper_grid)) {
 
 # Ver los resultados
 print(ponderated_results) # 0.91
-saveRDS(ponderated_results, "deeplearning_ponderado_results.RDS")
+saveRDS(ponderated_results, "deeplearning_ingeniero_results.RDS")
 
+library(tensorflow)
 
+# Predecir las probabilidades
+test_probabilities <- model %>% predict(as.matrix(test_data[, -which(names(test_data) == "Group")]))
 
+# Convertir las probabilidades en clases
+test_predictions <- test_probabilities %>%
+    `>`(0.5) %>%
+    k_cast("int32") %>%
+    as.array() %>%
+    as.integer()
 
+# Convertir las probabilidades en clases
+test_predictions <- apply(test_probabilities, 1, which.max) - 1
 
+# Asegúrate de que test_predictions es un factor con los niveles correctos
+test_predictions <- as.factor(test_predictions)
 
-## PONDERACIÓN DE MUESTRAS EN LA RED NEURONAL
+# Convertir test_labels_vector en factor
+test_labels_vector <- as.factor(test_labels_vector)
 
-# Inicializar un data frame para almacenar los resultados
-results_weighted <- data.frame()
+# Y deberías poder calcular la matriz de confusión sin problemas
+cm_ap <- confusionMatrix(test_predictions, test_labels_vector)
+print(cm_ap)
 
-# Calcular la varianza de cada píxel
-pixel_variance <- apply(combined_data[, -which(names(combined_data) %in% c("Group", "Age", "Sex"))], 2, var)
-
-# Normalizar los valores para que estén en el rango [0,1]
-pixel_weights <- pixel_variance / max(pixel_variance)
-
-# Usar estos pesos al entrenar el modelo
-sample_weights <- pixel_weights
-
-# Bucle sobre todas las combinaciones de hiperparámetros
-for (i in 1:nrow(hyper_grid)) {
-    
-    # Extraer los hiperparámetros para esta iteración
-    units <- hyper_grid[i, "units"]
-    activation <- hyper_grid[i, "activation"]
-    lr <- hyper_grid[i, "lr"]
-    epochs <- hyper_grid[i, "epochs"]
-    
-    # Definir el modelo
-    model <- keras_model_sequential() %>%
-        layer_dense(units = units, activation = activation, input_shape = c(ncol(train_data) - 1)) %>%
-        layer_dense(units = length(unique(train_data$Group)), activation = "softmax")
-    
-    # Compilar el modelo
-    model %>% compile(
-        optimizer = optimizer_rmsprop(lr = lr),
-        loss = "categorical_crossentropy",
-        metrics = c("accuracy")
-    )
-    
-    # Entrenar el modelo con ponderación de muestras
-    history <- model %>% fit(
-        x = as.matrix(train_data[, -which(names(train_data) == "Group")]),
-        y = train_labels,
-        sample_weight = sample_weights,
-        epochs = epochs,
-        batch_size = 128,
-        validation_split = 0.2
-    )
-    
-    # Evaluar el modelo en el conjunto de prueba
-    score <- model %>% evaluate(
-        x = as.matrix(test_data[, -which(names(test_data) == "Group")]),
-        y = test_labels
-    )
-    
-    # Añadir los resultados a la tabla de resultados
-    results_weighted <- rbind(results_weighted, cbind(hyper_grid[i, ], Loss = score[[1]], Accuracy = score[[2]]))
-}
-
-# Ver los resultados
-print(results_weighted)
-saveRDS(results_weighted, "deeplearning_weighted_results.RDS")
-
-
-
-## COMBINACIÓN DE INGENERÍA DE CARACTERÍSTICAS Y PONDERACIÓN DE MUESTRAS
-
-
-# Inicializar un data frame para almacenar los resultados
-results_combined <- data.frame()
-
-# Bucle sobre todas las combinaciones de hiperparámetros
-for (i in 1:nrow(hyper_grid)) {
-    
-    # Extraer los hiperparámetros para esta iteración
-    units <- hyper_grid[i, "units"]
-    activation <- hyper_grid[i, "activation"]
-    lr <- hyper_grid[i, "lr"]
-    epochs <- hyper_grid[i, "epochs"]
-    
-    # Definir el modelo
-    model <- keras_model_sequential() %>%
-        layer_dense(units = units, activation = activation, input_shape = c(ncol(train_data) - 1)) %>%
-        layer_dense(units = length(unique(train_data$Group)), activation = "softmax")
-    
-    # Compilar el modelo
-    model %>% compile(
-        optimizer = optimizer_rmsprop(lr = lr),
-        loss = "categorical_crossentropy",
-        metrics = c("accuracy")
-    )
-    
-    # Entrenar el modelo con las nuevas características y ponderación de muestras
-    history <- model %>% fit(
-        x = as.matrix(train_data[, -which(names(train_data) == "Group")]),
-        y = train_labels,
-        sample_weight = sample_weights,
-        epochs = epochs,
-        batch_size = 128,
-        validation_split = 0.2
-    )
-    
-    # Evaluar el modelo en el conjunto de prueba
-    score <- model %>% evaluate(
-        x = as.matrix(test_data[, -which(names(test_data) == "Group")]),
-        y = test_labels
-    )
-    
-    # Añadir los resultados a la tabla de resultados
-    results_combined <- rbind(results_combined, cbind(hyper_grid[i, ], Loss = score[[1]], Accuracy = score[[2]]))
-}
-
-# Ver los resultados
-print(results_combined)
-saveRDS(results_combined, "deeplearning_combined_results.RDS")
-
-        
