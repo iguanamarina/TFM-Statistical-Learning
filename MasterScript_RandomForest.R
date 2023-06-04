@@ -118,3 +118,25 @@ legend("topright",
 # Plot de la importancia de las variables
 varImpPlot(rf_model_tuned, main = "", n.var = 20)
 
+# install.packages("vivid")
+library(vivid)
+fit_rf  <- vivi(data = train_data, fit = rf_model_tuned, response = "Group", importanceType = "%IncMSE")
+viviHeatmap(mat = fit_rf[1:5,1:5])
+
+require(igraph)
+viviNetwork(mat = fit_rf)
+
+
+min_depth_frame <- min_depth_distribution(rf_model_tuned) 
+plot_min_depth_distribution(min_depth_frame)
+plot_min_depth_distribution(min_depth_frame, mean_sample = "relevant_trees", k = 15)
+
+# mean_sample = "all_trees" (filling missing value): the minimal depth of a variable in a tree that does not use it for splitting is equal to the mean depth of trees. Note that the depth of a tree is equal to the length of the longest path from root to leave in this tree. This equals the maximum depth of a variable in this tree plus one, as leaves are by definition not split by any variable.
+# 
+# mean_sample = "top_trees" (restricting the sample): to calculate the mean minimal depth only B~
+#  out of B
+#  (number of trees) observations are considered, where B~
+#  is equal to the maximum number of trees in which any variable was used for splitting. Remaining missing values for variables that were used for splitting less than B~
+#  times are filled in as in mean_sample = "all_trees".
+# 
+# mean_sample = "relevant_trees" (ignoring missing values): mean minimal depth is calculated using only non-missing values.
